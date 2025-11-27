@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeCare Certificate Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Inter', sans-serif; background: #e6f5ea; color: #333; }
+
+  header {
+    background: #28a745;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+  }
+  header img.logo { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
+  header h1 { font-size: 1.5rem; color: white; }
+  .admin-btn {
+    padding: 8px 15px;
+    background: #28a745;
+    border: 2px solid #001f54;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-decoration: none;
+  }
+  .admin-btn:hover { background: #218838; }
+
+  main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 50px 20px;
+    min-height: calc(100vh - 160px);
+    text-align: center;
+  }
+  .verification-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    position: relative;
+    animation: fadeIn 1s ease forwards;
+  }
+  .verification-card h2 { font-size: 1.8rem; margin-bottom: 15px; color: #28a745; }
+  .verification-card p.description { font-size: 14px; color: #555; margin-bottom: 25px; }
+  .verification-card input[type="text"] {
+    width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 16px; transition: 0.3s;
+  }
+  .verification-card input[type="text"]:focus { border-color: #ff3366; outline: none; }
+  .verification-card button {
+    padding: 12px 25px;
+    background: #d63384;
+    color: #fff;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .verification-card button:hover { background: #b02a6f; }
+
+  .loading { margin: 20px 0; display: none; font-style: italic; color: #555; animation: fadeIn 0.5s ease forwards; }
+  .result { margin-top: 20px; padding: 15px; border-radius: 10px; background: #f1f5f9; color: #333; display: none; text-align: left; animation: fadeIn 0.5s ease forwards; }
+  .verified { color: green; font-weight: bold; }
+  .not-verified { color: red; font-weight: bold; }
+
+  .secure { display: flex; align-items: center; justify-content: center; margin-top: 30px; gap: 10px; font-size: 14px; color: #28a745; }
+  .secure svg { width: 24px; height: 24px; fill: green; }
+
+  footer { background: #28a745; color: #fff; text-align: center; padding: 10px; font-size: 12px; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="logo.jpg" alt="WeCare Logo" class="logo">
+  <h1>WeCare Certificate Verification</h1>
+  <a href="admin-login.html" class="admin-btn">Admin</a>
+</header>
+
+<main>
+  <div class="verification-card">
+    <h2>Verify Your Certificate</h2>
+    <p class="description">
+      Enter the unique certificate ID printed on your certificate below. 
+      The system will instantly check its authenticity and display the holder's details.
+    </p>
+    <input type="text" id="certId" placeholder="Enter Certificate ID">
+    <button id="verifyBtn">Verify</button>
+    <div class="loading" id="loading">Checking certificate...</div>
+    <div class="result" id="result"></div>
+    <div class="secure">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zM12 17c-2.76 0-5-2.24-5-5V7l5-2.22L17 7v5c0 2.76-2.24 5-5 5z"/>
+      </svg>
+      Secure & Official
+    </div>
+  </div>
+</main>
+
+<footer>
+  &copy; 2025 WeCare Nursing Services - Created by Vintech Digital Services
+</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBIM_jh15J2riP1XXtxP4hCmlbx1BqK5-8",
+    authDomain: "wecare--verification.firebaseapp.com",
+    projectId: "wecare--verification",
+    storageBucket: "wecare--verification.appspot.com",
+    messagingSenderId: "198997154830",
+    appId: "1:198997154830:web:a732dc7abc306ed1a5f05f"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const verifyBtn = document.getElementById('verifyBtn');
+  const certIdInput = document.getElementById('certId');
+  const loading = document.getElementById('loading');
+  const resultDiv = document.getElementById('result');
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+                      .replace(/'/g,'&#39;');
+  }
+
+  verifyBtn.addEventListener('click', async () => {
+    const certId = certIdInput.value.trim();
+    if (!certId) {
+      alert("Please enter a certificate ID.");
+      certIdInput.focus();
+      return;
+    }
+
+    verifyBtn.disabled = true;
+    loading.style.display = 'block';
+    resultDiv.style.display = 'none';
+
+    try {
+      const docRef = doc(db, "Students", certId); // ✅ Correct collection name
+      const docSnap = await getDoc(docRef);
+
+      loading.style.display = 'none';
+      verifyBtn.disabled = false;
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        resultDiv.innerHTML = `
+          <p><strong>Certificate Status:</strong> <span class="verified">Verified</span></p>
+          <p><strong>Name:</strong> ${escapeHtml(data.firstName)} ${escapeHtml(data.lastName)}</p>
+          <p><strong>Other Name:</strong> ${escapeHtml(data.otherName || '-')}</p>
+          <p><strong>Course:</strong> ${escapeHtml(data.course)}</p>
+          <p><strong>Field/Department:</strong> ${escapeHtml(data.field || '-')}</p>
+        `;
+      } else {
+        resultDiv.innerHTML = `<p class="not-verified">Certificate Not Verified</p>`;
+        certIdInput.focus();
+      }
+      resultDiv.style.display = 'block';
+    } catch (error) {
+      loading.style.display = 'none';
+      verifyBtn.disabled = false;
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `<p class="not-verified">Error fetching certificate. Please try again later.</p>`;
+      console.error(error);
+    }
+  });
+</script>
+
+</body>
+</html>

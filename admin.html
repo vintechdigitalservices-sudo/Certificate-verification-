@@ -27,14 +27,23 @@
     width:100%; padding:10px 12px; border-radius:6px; border:1px solid #ccc; font-size:14px;
   }
   .small { width:160px; }
-  .progress { height:8px; background:#f1f5f9; border-radius:6px; overflow:hidden; margin-top:8px; }
+  .progress { height:8px; background:#f1f5f9; border-radius:6px; overflow:hidden; margin-top:8px; display: none !important; } /* Hidden entirely */
   .progress > i { display:block; height:100%; width:0%; background:#28a745; transition:width .2s ease; }
 
   table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 6px 24px rgba(0,0,0,0.08); }
   th, td { padding:12px 10px; text-align:left; border-bottom:1px solid #eee; vertical-align:middle; }
   th { background:#28a745; color:#fff; font-weight:600; }
   tr:hover { background:#fafafa; }
-  td img.passport { width:90px; height:110px; object-fit:cover; border-radius:6px; border:2px solid #ccc; display:block; }
+  
+  /* Retained passport styling for table display */
+  .passport { 
+    width:90px; 
+    height:110px; 
+    object-fit:cover; 
+    border-radius:6px; 
+    border:2px solid #ccc; 
+    display:block;
+  }
   td .no-photo { width:90px; height:110px; border-radius:6px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px; border:2px dashed #e2e8f0; }
 
   .meta { font-size:13px; color:#666; }
@@ -108,14 +117,18 @@
         <option value="Not Verified">Not Verified</option>
       </select>
     </div>
-
-    <div class="col">
-      <label for="imageFile">Student Image (optional) — passport-style preview</label>
-      <input id="imageFile" type="file" accept="image/*">
-      <div class="progress" id="uploadProgress" style="display:none"><i></i></div>
-      <div id="imagePreview" style="margin-top:8px;"></div>
+    
+    <div class="col small">
+      <label for="gradDate">Graduation Date *</label>
+      <input id="gradDate" type="text" placeholder="YYYY-MM-DD" required>
     </div>
-  </div>
+    
+    <div class="col small">
+      <label for="issueDate">Certificate Issue Date</label>
+      <input id="issueDate" type="text" placeholder="YYYY-MM-DD">
+    </div>
+
+    </div>
 
   <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
     <button class="btn" type="submit" id="submitBtn">Submit</button>
@@ -146,7 +159,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDocs, collection, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+// REMOVED: Firebase Storage imports
 
 const firebaseConfig = {
   apiKey: "AIzaSyBIM_jh15J2riP1XXtxP4hCmlbx1BqK5-8",
@@ -160,7 +173,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
+// REMOVED: const storage = getStorage(app);
 
 const studentForm = document.getElementById('studentForm');
 const firstNameEl = document.getElementById('firstName');
@@ -170,17 +183,18 @@ const courseEl = document.getElementById('course');
 const fieldEl = document.getElementById('field');
 const certIdEl = document.getElementById('certId');
 const statusEl = document.getElementById('status');
-const imageFileEl = document.getElementById('imageFile');
-const uploadProgressEl = document.getElementById('uploadProgress');
-const uploadProgressBar = uploadProgressEl.querySelector('i');
-const imagePreview = document.getElementById('imagePreview');
+// === NEW ELEMENTS ===
+const gradDateEl = document.getElementById('gradDate'); 
+const issueDateEl = document.getElementById('issueDate'); 
+// REMOVED: imageFileEl, uploadProgressEl, uploadProgressBar, imagePreview
+
 const studentsTableBody = document.querySelector('#studentsTable tbody');
 const searchInput = document.getElementById('searchInput');
 const logoutBtn = document.getElementById('logoutBtn');
 const resetBtn = document.getElementById('resetBtn');
 
 let editingCertId = null;
-let currentImageFile = null;
+// REMOVED: let currentImageFile = null;
 
 onAuthStateChanged(auth, (user) => {
   if (!user) window.location.href = "admin-login.html";
@@ -191,35 +205,8 @@ logoutBtn.addEventListener('click', async () => {
   window.location.href = "admin-login.html";
 });
 
-imageFileEl.addEventListener('change', () => {
-  const f = imageFileEl.files[0];
-  currentImageFile = f || null;
-  imagePreview.innerHTML = '';
-  if (!f) return;
-  const img = document.createElement('img');
-  img.className = 'passport';
-  img.src = URL.createObjectURL(f);
-  imagePreview.appendChild(img);
-});
-
-async function uploadImageAndGetURL(certId) {
-  if (!currentImageFile) return null;
-  const filename = `${certId}_${Date.now()}_${currentImageFile.name.replace(/\s+/g,'_')}`;
-  const sRef = storageRef(storage, `students/${certId}/${filename}`);
-  const uploadTask = uploadBytesResumable(sRef, currentImageFile);
-  uploadProgressEl.style.display = 'block';
-  uploadProgressBar.style.width = '0%';
-  return new Promise((resolve, reject) => {
-    uploadTask.on('state_changed',
-      (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        uploadProgressBar.style.width = progress + '%';
-      },
-      (error) => { console.error('Upload failed', error); uploadProgressEl.style.display='none'; reject(error); },
-      async () => { uploadProgressEl.style.display='none'; const downloadURL = await getDownloadURL(uploadTask.snapshot.ref); resolve(downloadURL); }
-    );
-  });
-}
+// REMOVED: imageFileEl.addEventListener('change', ...)
+// REMOVED: async function uploadImageAndGetURL(...)
 
 async function loadStudents(filterText = '') {
   studentsTableBody.innerHTML = '';
@@ -233,7 +220,8 @@ async function loadStudents(filterText = '') {
   rows.sort((a,b) => (a.certId || '').toString().localeCompare((b.certId || '').toString()));
   for (const s of rows) {
     const tr = document.createElement('tr');
-    const imgHtml = s.imageURL ? `<img class="passport" src="${s.imageURL}" alt="photo">` : `<div class="no-photo">No photo</div>`;
+    // Simplified to always show "No photo" since we are not storing photos
+    const imgHtml = `<div class="no-photo">No photo</div>`; 
     const statusClass = (s.status || 'Not Verified').replace(/\s/g,'');
     tr.innerHTML = `
       <td style="width:110px">${imgHtml}</td>
@@ -269,22 +257,30 @@ studentForm.addEventListener('submit', async (e) => {
   const field = fieldEl.value.trim();
   const certId = certIdEl.value.trim();
   const status = statusEl.value;
-  if (!firstName || !lastName || !certId || !course) { alert('Please fill in required fields.'); return; }
+  // === NEW FIELDS GATHERED ===
+  const gradDate = gradDateEl.value.trim();
+  const issueDate = issueDateEl.value.trim();
+  
+  // Added gradDate to required validation
+  if (!firstName || !lastName || !certId || !course || !gradDate) { alert('Please fill in required fields.'); return; }
 
   try {
-    let imageURL = null;
-    if (currentImageFile) imageURL = await uploadImageAndGetURL(certId);
-    else if (editingCertId) {
-      const docSnap = await getDoc(doc(db, "Students", certId));
-      if (docSnap.exists()) imageURL = docSnap.data().imageURL || '';
-    }
-
-    await setDoc(doc(db, "Students", certId), { firstName, lastName, otherName, course, field, certId, status, imageURL: imageURL || '' });
+    // === SIMPLIFIED DATA OBJECT (NO IMAGEURL) ===
+    await setDoc(doc(db, "Students", certId), { 
+      firstName, lastName, otherName, course, field, certId, status, 
+      gradDate, issueDate, // New fields added
+      imageURL: '' // Keep imageURL empty for compatibility
+    });
+    
     alert('Student saved successfully.');
-    studentForm.reset(); currentImageFile = null; imagePreview.innerHTML = ''; uploadProgressEl.style.display='none'; uploadProgressBar.style.width='0%';
+    studentForm.reset(); 
+    // REMOVED: currentImageFile = null; imagePreview.innerHTML = ''; uploadProgressEl.style.display='none'; uploadProgressBar.style.width='0%';
     certIdEl.disabled = false; editingCertId = null;
     loadStudents(searchInput.value.trim());
-  } catch(err) { console.error(err); alert('Error saving student.'); }
+  } catch(err) { 
+    console.error('Submission Failed:', err); 
+    alert('Error saving student. Please check your Firestore Security Rules and network connection.'); 
+  }
 });
 
 window.editStudent = async function(certId) {
@@ -299,10 +295,14 @@ window.editStudent = async function(certId) {
   certIdEl.value = s.certId || '';
   certIdEl.disabled = true;
   statusEl.value = s.status || 'Not Verified';
+  // === POPULATE NEW DATE FIELDS ===
+  gradDateEl.value = s.gradDate || '';
+  issueDateEl.value = s.issueDate || '';
+  
   editingCertId = certId;
-  currentImageFile = null;
-  imagePreview.innerHTML = '';
-  if (s.imageURL) { const img = document.createElement('img'); img.src=s.imageURL; img.className='passport'; imagePreview.appendChild(img); }
+  // REMOVED: currentImageFile = null; imagePreview.innerHTML = '';
+  // The line below for showing the photo must be removed/modified as we removed storage
+  // if (s.imageURL) { const img = document.createElement('img'); img.src=s.imageURL; img.className='passport'; imagePreview.appendChild(img); } 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -313,7 +313,12 @@ window.deleteStudent = async function(certId) {
 };
 
 searchInput.addEventListener('input', () => { loadStudents(searchInput.value.trim()); });
-resetBtn.addEventListener('click', () => { studentForm.reset(); certIdEl.disabled=false; editingCertId=null; currentImageFile=null; imagePreview.innerHTML=''; uploadProgressEl.style.display='none'; uploadProgressBar.style.width='0%'; });
+resetBtn.addEventListener('click', () => { 
+  studentForm.reset(); 
+  certIdEl.disabled=false; 
+  editingCertId=null; 
+  // REMOVED: currentImageFile=null; imagePreview.innerHTML=''; uploadProgressEl.style.display='none'; uploadProgressBar.style.width='0%'; 
+});
 
 function escapeHtml(str) {
   if (!str && str !== '') return '';

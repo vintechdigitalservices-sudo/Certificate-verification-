@@ -3,187 +3,166 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WeCare Certificate Verification</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<title>UDUF Africa Certificate Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-  * { box-sizing: border-box; margin:0; padding:0; }
-  body { font-family: 'Inter', sans-serif; background: #e6f5ea; color: #333; }
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@400;700;900&display=swap');
+:root { --primary:#004aad; --accent:#ff7a00; }
+body { font-family:Montserrat,sans-serif;background:#f0f2f5;padding:20px;display:flex;flex-direction:column;align-items:center; }
 
-  header {
-    background: #28a745;
-    padding: 20px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #fff;
-  }
-  header img.logo { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
-  header h1 { font-size: 1.5rem; color: white; }
-  .admin-btn {
-    padding: 8px 15px;
-    background: #28a745;
-    border: 2px solid #001f54;
-    border-radius: 5px;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    transition: 0.3s;
-    text-decoration: none;
-  }
-  .admin-btn:hover { background: #218838; }
+.form-container { background:#fff;padding:25px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);width:100%;max-width:450px;margin-bottom:20px; }
+label { font-weight:700;font-size:14px; }
+input, select { width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px; }
 
-  main {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    padding: 50px 20px;
-    min-height: calc(100vh - 160px);
-    text-align: center;
-  }
-  .verification-card {
-    background: #fff;
-    border-radius: 15px;
-    padding: 40px 30px;
-    width: 100%;
-    max-width: 500px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    position: relative;
-    animation: fadeIn 1s ease forwards;
-  }
-  .verification-card h2 { font-size: 1.8rem; margin-bottom: 15px; color: #28a745; }
-  .verification-card p.description { font-size: 14px; color: #555; margin-bottom: 25px; }
-  .verification-card input[type="text"] {
-    width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 16px; transition: 0.3s;
-  }
-  .verification-card input[type="text"]:focus { border-color: #ff3366; outline: none; }
-  .verification-card button {
-    padding: 12px 25px;
-    background: #d63384;
-    color: #fff;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-  .verification-card button:hover { background: #b02a6f; }
+.date-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:10px;background:#fafafa;border:1px solid #ddd;border-radius:6px; }
+.date-item { text-align:center;padding:8px;border:1px solid #ccc;cursor:pointer;border-radius:4px;background:#fff;font-size:12px; }
+.date-item.selected { background:var(--primary);color:#fff; }
 
-  .loading { margin: 20px 0; display: none; font-style: italic; color: #555; animation: fadeIn 0.5s ease forwards; }
-  .result { margin-top: 20px; padding: 15px; border-radius: 10px; background: #f1f5f9; color: #333; display: none; text-align: left; animation: fadeIn 0.5s ease forwards; }
-  .verified { color: green; font-weight: bold; }
-  .not-verified { color: red; font-weight: bold; }
+button { width:100%;padding:14px;border:none;border-radius:6px;font-weight:700;margin-top:10px;cursor:pointer; }
+#genBtn { background:var(--accent);color:#fff; }
+#downloadBtn { background:#27ae60;color:#fff;display:none; }
 
-  .secure { display: flex; align-items: center; justify-content: center; margin-top: 30px; gap: 10px; font-size: 14px; color: #28a745; }
-  .secure svg { width: 24px; height: 24px; fill: green; }
+#usageInfo { font-weight:800;color:#004aad;text-align:center;margin:10px 0; }
 
-  footer { background: #28a745; color: #fff; text-align: center; padding: 10px; font-size: 12px; }
+#previewWrapper { display:none;margin-top:20px;animation:slideUp .7s ease forwards; }
+@keyframes slideUp { from{opacity:0;transform:translateY(60px)} to{opacity:1;transform:translateY(0)} }
 
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+#certArea { width:1000px;height:706px;position:relative;background:url('background.jpg') no-repeat center/100% 100%;overflow:hidden; }
+#mainLogo { position:absolute;top:50px;left:70px;width:95px; }
+#eventLogo { position:absolute;top:45px;right:65px;width:220px;height:120px;object-fit:contain; }
+
+.overlay { position:absolute;left:50%;transform:translateX(-50%);text-align:center;width:80%; }
+#certText_Static1 { top:245px;font-weight:900;letter-spacing:2px; }
+
+#outName { position:absolute;top:280px;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:42px;color:#8c6d1f;white-space:nowrap;max-width:60%; }
+.name-line { position:absolute;top:320px;left:50%;transform:translateX(-50%);width:50%;border-bottom:2px solid #d4af37; }
+
+#outParticipation { top:350px;font-weight:900; }
+#outEvent { top:390px;font-size:34px;font-weight:900;color:#e31e24;line-height:1.2; }
+#outDetails { top:475px;font-weight:700;line-height:1.5; }
+
+#redSeal { position:absolute;bottom:95px;left:50%;transform:translateX(-50%);width:90px;height:90px;background:radial-gradient(circle,#ff3b3b,#a30000);border-radius:50%;border:3px dashed #fff; }
+
+.sig-container { position:absolute;bottom:80px;width:300px;text-align:center; }
+#sigLeft { left:110px; } 
+#sigRight { right:110px; }
+
+.sig-img { height:70px;margin-bottom:-18px; }
+.sig-line { border-top:2px solid #d4af37;opacity:.6;width:100%; }
+.sig-name { font-weight:900;color:#8c6d1f;margin-top:5px; }
+.sig-title { font-size:11px;font-weight:800; }
+
+#footerID { position:absolute;bottom:18px;right:45px;font-weight:900;font-size:20px; }
+
+@media(max-width:1040px){ #certArea{transform:scale(.6);transform-origin:top center;} }
 </style>
 </head>
+
 <body>
 
-<header>
-  <img src="logo.jpg" alt="WeCare Logo" class="logo">
-  <h1>WeCare Certificate Verification</h1>
-  <a href="admin-login.html" class="admin-btn">Admin</a>
-</header>
+<div class="form-container">
+  <h2 style="text-align:center;color:#004aad;">UDUF Portal</h2>
 
-<main>
-  <div class="verification-card">
-    <h2>Verify Your Certificate</h2>
-    <p class="description">
-      Enter the unique certificate ID printed on your certificate below. 
-      The system will instantly check its authenticity and display the holder's details.
-    </p>
-    <input type="text" id="certId" placeholder="Enter Certificate ID">
-    <button id="verifyBtn">Verify</button>
-    <div class="loading" id="loading">Checking certificate...</div>
-    <div class="result" id="result"></div>
-    <div class="secure">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zM12 17c-2.76 0-5-2.24-5-5V7l5-2.22L17 7v5c0 2.76-2.24 5-5 5z"/>
-      </svg>
-      Secure & Official
+  <label>Access Code</label>
+  <input id="accessCodeInput" placeholder="Enter access code">
+
+  <p id="usageInfo"></p>
+
+  <label>Preferred Certificate Name</label>
+  <input id="inName">
+
+  <label>Select Event</label>
+  <select id="inEvent">
+    <option value="none">Choose...</option>
+    <option value="ACTIVE LEADERSHIP AND ENTREPRENEURSHIP BOOTCAMP">Active Leadership & Entrepreneurship Bootcamp</option>
+    <option value="UNDER 45 CEOs SUMMIT">Under 45 CEOs Summit</option>
+    <option value="AFRICAN DAY CELEBRATION">African Day Celebration</option>
+    <option value="INTERNATIONAL YOUTH DAY">International Youth Day</option>
+  </select>
+
+  <label>Select Month</label>
+  <select id="inMonth">
+    <option>January</option><option>February</option><option>March</option><option>April</option>
+    <option>May</option><option>June</option><option>July</option><option>August</option>
+    <option>September</option><option>October</option><option>November</option><option>December</option>
+  </select>
+
+  <label>Select Date(s)</label>
+  <div id="datePicker" class="date-grid"></div>
+
+  <label>Year</label>
+  <input id="inYear" value="2026">
+
+  <button id="genBtn" onclick="g()">GENERATE</button>
+  <button id="downloadBtn" onclick="d()">DOWNLOAD PDF</button>
+</div>
+
+<div id="previewWrapper">
+  <div id="certArea">
+    <img id="mainLogo" src="uduf_logo.png">
+    <img id="eventLogo">
+
+    <div id="certText_Static1" class="overlay">THIS IS TO CERTIFY THAT</div>
+    <div id="outName"></div>
+    <div class="name-line"></div>
+
+    <div id="outParticipation" class="overlay"></div>
+    <div id="outEvent" class="overlay"></div>
+    <div id="outDetails" class="overlay"></div>
+
+    <div id="redSeal"></div>
+
+    <div id="sigLeft" class="sig-container">
+      <img src="president_sig.png" class="sig-img">
+      <div class="sig-line"></div>
+      <div class="sig-name">Ezuma Smart Chinedu PhD.</div>
+      <div class="sig-title">Founding President</div>
     </div>
+
+    <div id="sigRight" class="sig-container">
+      <img src="director_sig.png" class="sig-img">
+      <div class="sig-line"></div>
+      <div class="sig-name">Chukwuekezie ThankGod</div>
+      <div class="sig-title">Director, ALE Bootcamp</div>
+    </div>
+
+    <div id="footerID">CAC/IT/NO 103111</div>
   </div>
-</main>
+</div>
 
-<footer>
-  &copy; 2025 WeCare Nursing Services - Created by Vintech Digital Services
-</footer>
+<script>
+(()=>{const _0x=['BOOTCAMP-2026',3,'gen_count','2026-03-01T12:00:00'];
+const A=_0x[0],M=_0x[1],K=_0x[2],L=new Date(_0x[3]).getTime();
+if(Date.now()>=L){document.body.innerHTML='<h2 style="text-align:center;margin-top:40vh">Portal Closed</h2>';return;}
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+const e={"ACTIVE LEADERSHIP AND ENTREPRENEURSHIP BOOTCAMP":"bootcamp_logo.png","UNDER 45 CEOs SUMMIT":"ceo_logo.png","AFRICAN DAY CELEBRATION":"african_logo.png","INTERNATIONAL YOUTH DAY":"youth_logo.png"};
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBIM_jh15J2riP1XXtxP4hCmlbx1BqK5-8",
-    authDomain: "wecare--verification.firebaseapp.com",
-    projectId: "wecare--verification",
-    storageBucket: "wecare--verification.appspot.com",
-    messagingSenderId: "198997154830",
-    appId: "1:198997154830:web:a732dc7abc306ed1a5f05f"
-  };
+const gEl=document.getElementById("datePicker");let sd=[];
+for(let i=1;i<=31;i++){let d=document.createElement("div");d.className="date-item";d.innerText=i;d.onclick=()=>{d.classList.toggle("selected");sd.includes(i)?sd=sd.filter(x=>x!==i):sd.push(i)};gEl.appendChild(d);}
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+const o=n=>n+(["th","st","nd","rd"][(n%100-20)%10]||["th","st","nd","rd"][n%100]||"th");
+const f=()=>{let s=42;outName.style.fontSize=s+"px";while(outName.scrollWidth>outName.clientWidth&&s>26){s--;outName.style.fontSize=s+"px"}}
+const u=()=>usageInfo.innerText=`Remaining generations: ${M-(+localStorage.getItem(K)||0)}`;
+u();
 
-  const verifyBtn = document.getElementById('verifyBtn');
-  const certIdInput = document.getElementById('certId');
-  const loading = document.getElementById('loading');
-  const resultDiv = document.getElementById('result');
+window.g=()=>{const c=accessCodeInput.value.trim();let n=+localStorage.getItem(K)||0;
+if(c!==A)return alert("Invalid access code");
+if(n>=M)return alert("You have reached your 3 generation limit");
+const name=inName.value.trim(),ev=inEvent.value;
+if(!name||ev==="none"||!sd.length)return alert("Fill all fields!");
+localStorage.setItem(K,n+1);u();
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
-                      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-                      .replace(/'/g,'&#39;');
-  }
+eventLogo.src=e[ev];outName.innerText=name;f();
+outParticipation.innerText=`Fully participated in a ${sd.length} days`;
+outEvent.innerText=ev;
+outDetails.innerHTML=`Held on the ${sd.map(o).join(", ")} day of ${inMonth.value} ${inYear.value} at<br>Onitsha Business School Executive Hall, GRA Onitsha, Anambra State.`;
+previewWrapper.style.display="block";downloadBtn.style.display="block";};
 
-  verifyBtn.addEventListener('click', async () => {
-    const certId = certIdInput.value.trim();
-    if (!certId) {
-      alert("Please enter a certificate ID.");
-      certIdInput.focus();
-      return;
-    }
-
-    verifyBtn.disabled = true;
-    loading.style.display = 'block';
-    resultDiv.style.display = 'none';
-
-    try {
-      const docRef = doc(db, "Students", certId); // ✅ Correct collection name
-      const docSnap = await getDoc(docRef);
-
-      loading.style.display = 'none';
-      verifyBtn.disabled = false;
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        resultDiv.innerHTML = `
-          <p><strong>Certificate Status:</strong> <span class="verified">Verified</span></p>
-          <p><strong>Name:</strong> ${escapeHtml(data.firstName)} ${escapeHtml(data.lastName)}</p>
-          <p><strong>Other Name:</strong> ${escapeHtml(data.otherName || '-')}</p>
-          <p><strong>Course:</strong> ${escapeHtml(data.course)}</p>
-          <p><strong>Field/Department:</strong> ${escapeHtml(data.field || '-')}</p>
-        `;
-      } else {
-        resultDiv.innerHTML = `<p class="not-verified">Certificate Not Verified</p>`;
-        certIdInput.focus();
-      }
-      resultDiv.style.display = 'block';
-    } catch (error) {
-      loading.style.display = 'none';
-      verifyBtn.disabled = false;
-      resultDiv.style.display = 'block';
-      resultDiv.innerHTML = `<p class="not-verified">Error fetching certificate. Please try again later.</p>`;
-      console.error(error);
-    }
-  });
+window.d=async()=>{const c=await html2canvas(certArea,{scale:3});
+const p=new jspdf.jsPDF("l","px",[1000,706]);p.addImage(c.toDataURL(),"PNG",0,0,1000,706);p.save("UDUF_Certificate.pdf");};
+})();
 </script>
 
 </body>
